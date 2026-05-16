@@ -47,6 +47,13 @@ data/
 *.feather
 *.xlsx
 *.xls
+!data/
+!data/**
+!dataset/
+!dataset/*.csv
+
+# Research documents (local only)
+research/
 
 # Jupyter Notebook
 .ipynb_checkpoints

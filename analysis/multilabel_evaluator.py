@@ -124,7 +124,7 @@ def multilabel_metrics(y_true, y_pred):
         "Precision": precision,
         "Recall": recall,
         "F1": f1,
-        "Support": support,
+        "Jumlah Sampel": support,
     })
     return {
         "micro_f1": f1_score(y_true, y_pred, average="micro", zero_division=0),
