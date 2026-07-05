@@ -11,7 +11,7 @@
 ### 1.1 Project-Specific Important Rules
 
 - **Model weights adalah aset besar (~1 GB)**. Jangan commit model ke Git. Semua file model sudah di-`.gitignore`. Kalau perlu membahas path model, gunakan path relatif `models/finetuned-xlm-multilabel-twostage`.
-- **Dataset CSV di-track di Git** (`dataset/*.csv`), tapi file data besar di `data/` di-ignore. Jangan mengubah struktur kolom dataset tanpa diskusi karena mempengaruhi training, evaluasi, dan aplikasi.
+- **Dataset CSV di-track di Git** (`dataset/*.csv`), termasuk dataset training multilabel dan dataset lirik mentah. File data besar lain harus ditempatkan di `data/` agar di-ignore. Jangan mengubah struktur kolom dataset tanpa diskusi karena mempengaruhi training, evaluasi, dan aplikasi.
 - **Threshold per label ditentukan dari data validasi**, bukan hardcoded sembarangan. Kalau ada perubahan threshold, harus melalui proses tuning ulang atau diskusi eksplisit.
 - **Jangan mengubah split ratio atau random state** tanpa diskusi — ini mempengaruhi reproduktibilitas hasil yang sudah dilaporkan di skripsi.
 - **Catatan eksperimen** di `docs/catatan_eksperimen_model.md` harus di-update kalau ada perubahan konfigurasi training atau hasil model baru.
@@ -70,9 +70,8 @@ project_xlm_hindia/
 │   └── helpers.py                        # Validasi dataset
 ├── dataset/                               # Dataset management
 │   ├── dataset-emosi-multilabel.csv      # Dataset lirik Hindia (tracked)
+│   ├── dataset-lirik-lagu-hindia.csv     # Dataset lirik mentah (tracked)
 │   └── emotion_id_opinion.py             # NusaCrowd dataset loader (tweet)
-├── data/                                  # Data mentah (ignored)
-│   └── dataset-lirik-lagu-hindia.csv     # Dataset lirik mentah
 ├── models/                                # Model checkpoints (ignored, ~1 GB+)
 │   ├── experiments-xlm-multilabel-twostage/  # Experiment grid search
 │   │   ├── stage1_tweet{N}_lr{X}/        # Checkpoint stage 1

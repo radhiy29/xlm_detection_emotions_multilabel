@@ -47,8 +47,6 @@ data/
 *.feather
 *.xlsx
 *.xls
-!data/
-!data/**
 !dataset/
 !dataset/*.csv
 

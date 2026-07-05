@@ -60,9 +60,9 @@ project_xlm_hindia/
 ├── utils/                            # Utility functions
 │   └── helpers.py                    # Helper functions
 ├── dataset/                          # Dataset management
-│   ├── dataset-emosi-multilabel.csv  # Dataset lirik utama (tracked)
+│   ├── dataset-emosi-multilabel.csv  # Dataset training multilabel (tracked)
+│   ├── dataset-lirik-lagu-hindia.csv # Dataset lirik mentah (tracked)
 │   └── emotion_id_opinion.py         # Referensi loader dataset tweet
-├── data/                              # Data mentah lokal (ignored)
 ├── models/                           # Model checkpoints (ignored)
 │   ├── experiments-xlm-multilabel-twostage/  # Experiment checkpoints
 │   └── finetuned-xlm-multilabel-twostage/    # Final model
@@ -192,7 +192,7 @@ Kolom pada `dataset/dataset-emosi-multilabel.csv`:
 | `lirik_lagu` | Teks lirik |
 | `label_emosi` | Satu atau beberapa label yang dipisahkan koma, misalnya `Sedih, Cinta` |
 
-Label yang valid adalah `Senang`, `Sedih`, `Marah`, `Takut`, dan `Cinta`. Dataset CSV ini dilacak oleh Git. File data mentah berukuran besar di dalam `data/` tidak dilacak.
+Label yang valid adalah `Senang`, `Sedih`, `Marah`, `Takut`, dan `Cinta`. `dataset/dataset-emosi-multilabel.csv` adalah dataset yang dipakai untuk training dan evaluasi, sedangkan `dataset/dataset-lirik-lagu-hindia.csv` menyimpan kumpulan lirik mentah. Kedua file CSV tersebut dilacak oleh Git.
 
 Untuk upload melalui tab **Input Data**, kolom yang wajib hanya `judul_lagu`, `musisi`, `album`, `tahun_rilis`, dan `lirik_lagu`. Kolom `label_emosi` tidak diperlukan untuk inferensi.
 
