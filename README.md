@@ -31,38 +31,47 @@ Model ini menggunakan pendekatan **two-stage fine-tuning** pada XLM-RoBERTa base
 | Weighted F1 | 0.717 |
 | Macro Precision | 0.558 |
 | Macro Recall | 0.748 |
+| Hamming Loss | 0.257 |
+| Subset Accuracy | 0.229 |
 
-### Performa Per Label
+Metrik di atas dihitung pada **test set** menggunakan threshold hasil optimasi pada validation set.
 
-| Label | Precision | Recall | F1 |
-|-------|-----------|--------|-----|
-| Senang | 0.588 | - | 0.588 |
-| Sedih | 0.842 | - | 0.842 |
-| Marah | 0.727 | - | 0.727 |
-| Takut | 0.476 | - | 0.476 |
-| Cinta | 0.727 | - | 0.727 |
+### Hasil Optimasi Threshold pada Validation Set
+
+| Label | Threshold | F1 Validasi |
+|-------|----------:|------------:|
+| Senang | 0.30 | 0.588 |
+| Sedih | 0.30 | 0.842 |
+| Marah | 0.50 | 0.727 |
+| Takut | 0.50 | 0.476 |
+| Cinta | 0.45 | 0.727 |
+
+Nilai pada tabel ini bukan precision/recall test set. Threshold dipilih secara terpisah untuk setiap label berdasarkan F1 validation set.
 
 ## 🏗️ Struktur Project
 
 ```
 project_xlm_hindia/
 ├── analysis/                          # Modul analisis dan training
-│   ├── emotion_model.py              # Model inference untuk emosi
-│   ├── multilabel_evaluator.py       # Evaluasi model multilabel
+│   ├── multilabel_evaluator.py       # Evaluasi dan inferensi multilabel aktif
 │   └── train_model_multilabel_twostage.py  # Script training
 ├── preprocessing/                     # Preprocessing teks
 │   └── text_cleaner.py               # Cleaning lirik
 ├── utils/                            # Utility functions
 │   └── helpers.py                    # Helper functions
 ├── dataset/                          # Dataset management
-│   ├── dataset-emosi-multilabel.csv  # Dataset lirik (ignored)
-│   └── emotion_id_opinion.py         # Dataset loader
+│   ├── dataset-emosi-multilabel.csv  # Dataset lirik utama (tracked)
+│   └── emotion_id_opinion.py         # Referensi loader dataset tweet
+├── data/                              # Data mentah lokal (ignored)
 ├── models/                           # Model checkpoints (ignored)
 │   ├── experiments-xlm-multilabel-twostage/  # Experiment checkpoints
 │   └── finetuned-xlm-multilabel-twostage/    # Final model
-├── docs/                             # Dokumentasi
+├── docs/                             # Catatan eksperimen model
+├── research/                         # Dokumen proposal/skripsi lokal (ignored)
+├── .streamlit/                       # Konfigurasi lokal Streamlit
 ├── app.py                            # Streamlit application
 ├── requirements.txt                  # Python dependencies
+├── AGENTS.md                         # Panduan kontribusi project
 ├── .gitignore                        # Git ignore rules
 └── README.md                         # Dokumentasi ini
 ```
@@ -74,6 +83,8 @@ project_xlm_hindia/
 - Python 3.8+
 - pip
 - Git
+
+Lingkungan lokal saat dokumentasi ini diperbarui menggunakan Python 3.13.6. Training penuh dan kompatibilitas CUDA tetap perlu diverifikasi pada mesin yang digunakan karena versi dependency di `requirements.txt` tidak dipin.
 
 ### Setup Environment
 
@@ -118,14 +129,12 @@ Aplikasi akan terbuka di browser pada `http://localhost:8501`
 ### 2. Training Model Baru
 
 ```bash
-python analysis/train_model_multilabel_twostage.py \
-    --base_model xlm-roberta-base \
-    --tweet_per_label 300 \
-    --stage1_lr 2e-5 \
-    --stage2_lr 1e-5 \
-    --output_root models/experiments-xlm-multilabel-twostage \
-    --final_output_dir models/finetuned-xlm-multilabel-twostage
+python analysis/train_model_multilabel_twostage.py --base_model xlm-roberta-base --tweet_per_label 300 --stage1_lr 2e-5 --output_root models/experiments-xlm-multilabel-twostage --final_output_dir models/finetuned-xlm-multilabel-twostage
 ```
+
+Pada mode single run, stage 2 menggunakan learning rate `1e-5`, max length `192`, weight decay `0.05`, dan 8 epoch dengan early stopping patience `2`. Untuk menjalankan grid search gunakan flag `--grid`; opsi kandidat learning rate stage 2 diatur melalui `--stage2_lrs`.
+
+Training memerlukan resource yang jauh lebih besar daripada inferensi. GPU CUDA disarankan untuk training; aplikasi dapat melakukan inferensi dengan CPU apabila CUDA tidak tersedia.
 
 ### 3. Evaluasi Model
 
@@ -135,8 +144,10 @@ Evaluasi model dapat dilakukan melalui tab "Evaluasi Model" di aplikasi Streamli
 
 ### Two-Stage Fine-tuning
 
-1. **Stage 1**: Fine-tuning dengan learning rate lebih tinggi (2e-5) untuk adaptasi domain
-2. **Stage 2**: Fine-tuning lanjutan dengan learning rate lebih rendah (1e-5) untuk optimasi performa
+1. **Stage 1 — adaptasi bahasa Indonesia**: Fine-tuning pada subset seimbang [Emotion Dataset from Indonesian Public Opinion](https://github.com/Ricco48/Emotion-Dataset-from-Indonesian-Public-Opinion), dengan learning rate `2e-5`, 2 epoch, dan max length `128`.
+2. **Stage 2 — spesialisasi lirik Hindia**: Fine-tuning lanjutan pada dataset lirik Hindia multilabel, dengan learning rate `1e-5`, maksimal 8 epoch, max length `192`, weight decay `0.05`, dan early stopping patience `2`.
+
+Training menggunakan `BCEWithLogitsLoss` dengan `pos_weight` per label yang dihitung dari training set. Oversampling label langka (`Takut` dan `Senang`) diaktifkan secara default. Pemilihan checkpoint stage 2 menggunakan macro F1 validation set.
 
 ### Threshold Optimization
 
@@ -146,6 +157,8 @@ Threshold per label ditentukan dari data validasi untuk memaksimalkan F1 score:
 - Marah: 0.50
 - Takut: 0.50
 - Cinta: 0.45
+
+Pencarian dilakukan pada rentang `0.20`–`0.75` dengan step `0.05`. Test set tidak digunakan untuk memilih threshold. Jika tidak ada skor yang melewati threshold saat inferensi, label dengan probabilitas tertinggi dipakai sebagai fallback.
 
 ### Agregasi Skor Bait
 
@@ -164,26 +177,50 @@ Dataset terdiri dari lirik lagu Hindia yang dianotasi dengan label emosi multila
 
 Dataset menggunakan stratified split berdasarkan label emosi paling jarang untuk menjaga distribusi.
 
+Split dibuat dengan rasio `80/10/10` dan `random_state=42`. Nilai ini dipertahankan untuk menjaga reproduktibilitas hasil yang dilaporkan.
+
+### Skema Dataset Training
+
+Kolom pada `dataset/dataset-emosi-multilabel.csv`:
+
+| Kolom | Keterangan |
+|-------|------------|
+| `judul_lagu` | Judul lagu |
+| `musisi` | Nama musisi |
+| `album` | Nama album |
+| `tahun_rilis` | Tahun rilis |
+| `lirik_lagu` | Teks lirik |
+| `label_emosi` | Satu atau beberapa label yang dipisahkan koma, misalnya `Sedih, Cinta` |
+
+Label yang valid adalah `Senang`, `Sedih`, `Marah`, `Takut`, dan `Cinta`. Dataset CSV ini dilacak oleh Git. File data mentah berukuran besar di dalam `data/` tidak dilacak.
+
+Untuk upload melalui tab **Input Data**, kolom yang wajib hanya `judul_lagu`, `musisi`, `album`, `tahun_rilis`, dan `lirik_lagu`. Kolom `label_emosi` tidak diperlukan untuk inferensi.
+
 ## 🎨 Visualisasi
 
 Aplikasi menyediakan berbagai visualisasi:
-- Bar chart distribusi emosi per lagu
-- Heatmap intensitas emosi per bait
-- Radar chart perbandingan emosi antar lagu
-- Confusion matrix per label
-- Co-occurrence matrix antar emosi
+- Radar skor emosi untuk lagu yang dipilih
+- Tren skor emosi per bait
+- Distribusi jumlah emosi per lagu dan frekuensi emosi diskografi
+- Heatmap emosi per album
+- Distribusi emosi per album
+- Kombinasi/co-occurrence emosi
+- Tren emosi berdasarkan tahun rilis
+- Performa dan confusion matrix per label pada test set
 
 ## 🔧 Konfigurasi
 
 ### Model Path
 
-Model path dapat dikonfigurasi melalui environment variable:
+Model aktif harus tersedia pada path relatif berikut:
 
-```bash
-export MODEL_PATH="models/finetuned-xlm-multilabel-twostage"
-# atau untuk Hugging Face Hub:
-export MODEL_PATH="username/xlm-roberta-hindia-emotion"
+```text
+models/finetuned-xlm-multilabel-twostage
 ```
+
+Saat ini aplikasi menggunakan path tersebut secara langsung dan belum membaca environment variable `MODEL_PATH`. Loading langsung dari Hugging Face Hub juga belum menjadi contract aplikasi karena threshold dibaca dari `multilabel_metadata.json` lokal.
+
+Model tidak disertakan dalam Git karena ukurannya sekitar 1 GB. Sebelum menjalankan aplikasi, salin model final beserta tokenizer dan `multilabel_metadata.json` ke path di atas, peroleh model dari pemilik project, atau jalankan kembali script training.
 
 ### Streamlit Configuration
 
@@ -197,6 +234,8 @@ Konfigurasi Streamlit dapat diatur di `.streamlit/config.toml` (tidak di-commit)
 - **Macro F1**: Rata-rata performa per label (unweighted)
 - **Weighted F1**: Rata-rata performa per label (weighted by support)
 - **Precision/Recall per label**: Untuk analisis detail per emosi
+- **Hamming Loss**: Proporsi keputusan label yang salah dari seluruh pasangan sampel-label
+- **Subset Accuracy**: Proporsi sampel yang seluruh kombinasi labelnya diprediksi tepat
 
 ### Confusion Matrix
 
@@ -209,9 +248,10 @@ Untuk setiap label, confusion matrix menunjukkan:
 ## 🚧 Limitasi
 
 - Model dilatih pada dataset relatif kecil (344 samples)
-- Performa pada label "Takut" masih rendah (F1: 0.476)
+- F1 validasi label "Takut" saat tuning threshold masih rendah (0.476)
 - Model spesifik untuk lirik Hindia, mungkin kurang generalize untuk artis lain
-- Threshold fixed, tidak adaptive per konteks
+- Threshold tetap per label dan tidak adaptif terhadap konteks
+- Dependency tidak dipin sehingga hasil instalasi dapat berbeda antar waktu dan lingkungan
 
 ## 🔮 Future Work
 
