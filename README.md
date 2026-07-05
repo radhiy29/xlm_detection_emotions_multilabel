@@ -68,7 +68,7 @@ project_xlm_hindia/
 │   └── finetuned-xlm-multilabel-twostage/    # Final model
 ├── docs/                             # Catatan eksperimen model
 ├── research/                         # Dokumen proposal/skripsi lokal (ignored)
-├── .streamlit/                       # Konfigurasi lokal Streamlit
+├── .streamlit/                       # Konfigurasi Streamlit (tracked)
 ├── app.py                            # Streamlit application
 ├── requirements.txt                  # Python dependencies
 ├── AGENTS.md                         # Panduan kontribusi project
@@ -224,7 +224,7 @@ Model tidak disertakan dalam Git karena ukurannya sekitar 1 GB. Sebelum menjalan
 
 ### Streamlit Configuration
 
-Konfigurasi Streamlit dapat diatur di `.streamlit/config.toml` (tidak di-commit).
+Konfigurasi tema dan server Streamlit disimpan di `.streamlit/config.toml` dan dilacak oleh Git. Secret lokal tetap harus disimpan di `.streamlit/secrets.toml`, yang diabaikan oleh Git.
 
 ## 📊 Metrics dan Evaluasi
 
