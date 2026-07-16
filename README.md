@@ -1,4 +1,4 @@
-# 🎵 Analisis Emosi Lirik Hindia dengan XLM-RoBERTa
+# 🎵 Analisis Emosi Lirik Lagu Hindia Menggunakan Model XLM-RoBERTa
 
 Aplikasi analisis emosi multilabel untuk lirik lagu berbahasa Indonesia menggunakan model XLM-RoBERTa yang di-fine-tune dengan dataset lirik Hindia.
 
